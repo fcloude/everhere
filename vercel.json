@@ -1,0 +1,9 @@
+{
+  "buildCommand": "cd apps/web && pnpm install && pnpm build",
+  "outputDirectory": "apps/web/out",
+  "installCommand": "pnpm install",
+  "framework": null,
+  "rewrites": [
+    { "source": "/((?!_next|logo.png|robots.txt|sitemap.xml|favicon.ico|.*\\.html).*)", "destination": "/index.html" }
+  ]
+}

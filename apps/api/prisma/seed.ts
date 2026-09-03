@@ -43,20 +43,16 @@ async function main() {
 
   // ── Default community links ────────────────────────────
   const defaultLinks = [
-    { platform: 'discord', url: 'https://discord.gg/everhere', label: 'Discord', order: 0 },
-    { platform: 'telegram', url: 'https://t.me/everhere', label: 'Telegram', order: 1 },
-    { platform: 'reddit', url: 'https://reddit.com/r/everhere', label: 'Reddit', order: 2 },
+    { platform: 'reddit', url: 'https://reddit.com/r/everhere_official', label: 'Reddit', order: 0 },
+    { platform: 'telegram', url: 'https://t.me/everheregroup', label: 'Telegram', order: 1 },
+    { platform: 'whatsapp', url: 'https://chat.whatsapp.com/Claz8fIeFxl3DKpVboO1fv', label: 'WhatsApp', order: 2 },
   ];
 
   for (const link of defaultLinks) {
-    await prisma.communityLink.upsert({
-      where: { id: link.platform },
-      update: {},
-      create: {
-        ...link,
-        enabled: false, // Disabled until real links are configured
-      },
-    });
+    const existing = await prisma.communityLink.findFirst({ where: { platform: link.platform } });
+    if (!existing) {
+      await prisma.communityLink.create({ data: { ...link, enabled: true } });
+    }
   }
   console.log(`  ✓ ${defaultLinks.length} default community links created`);
 

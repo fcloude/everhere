@@ -1,0 +1,387 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────
+
+enum RoleName {
+  visitor
+  user
+  contributor
+  moderator
+  admin
+}
+
+enum ApplicationStatus {
+  pending
+  approved
+  rejected
+  activated
+}
+
+enum ContributionStatus {
+  pending
+  approved
+  rejected
+}
+
+enum FeedbackStatus {
+  new
+  in_review
+  resolved
+  wontfix
+}
+
+enum FeedbackCategory {
+  general
+  bug
+  feature_request
+  website_issue
+  community_issue
+  other
+}
+
+enum ReportSeverity {
+  low
+  medium
+  high
+  critical
+}
+
+enum ReportStatus {
+  new
+  acknowledged
+  in_progress
+  resolved
+}
+
+enum PreferredRole {
+  developer
+  designer
+  researcher
+  security
+  moderator
+  tester
+  docs
+  community
+  other
+}
+
+// ─── User & Auth ─────────────────────────────────────────
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  displayName   String
+  passwordHash  String
+  role          RoleName @default(visitor)
+  emailVerified Boolean  @default(false)
+  mfaEnabled    Boolean  @default(false)
+  mfaSecret     String?
+  active        Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  sessions                Session[]
+  contributorProfile      ContributorProfile?
+  contributions           Contribution[]
+  feedback                Feedback[]
+  securityReports         SecurityReport[]
+  auditLogs               AuditLog[]
+  notifications           Notification[]
+  passwordResetTokens     PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  applications            Application[]
+  flaggedBy               ModerationFlag[] @relation("FlaggedUser")
+  flaggedByMod            ModerationFlag[] @relation("FlaggingMod")
+
+  @@index([role])
+  @@index([email])
+}
+
+model Session {
+  id            String   @id
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt     DateTime
+  ipHash        String?
+  userAgent     String?
+  lastActiveAt  DateTime @default(now())
+  revokedAt     DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([tokenHash])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([tokenHash])
+}
+
+// ─── Contributor System ──────────────────────────────────
+
+model Application {
+  id            String            @id @default(uuid())
+  displayName   String
+  email         String
+  skills        String[]
+  preferredRole PreferredRole
+  portfolioLinks String[]
+  message       String?
+  status        ApplicationStatus @default(pending)
+  reviewerNotes String?
+  reviewedById  String?
+  reviewedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User? @relation(fields: [email], references: [email])
+
+  @@index([status])
+  @@index([email])
+}
+
+model ContributorProfile {
+  id            String        @id @default(uuid())
+  userId        String        @unique
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio           String?
+  preferredRole PreferredRole @default(developer)
+  portfolioLinks String[]
+
+  // Visibility controls (contributor-controlled)
+  showBio   Boolean @default(false)
+  showSkills Boolean @default(false)
+  showLinks Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Many-to-many: skills
+  skills UserSkill[]
+
+  @@index([userId])
+}
+
+model Skill {
+  id   String @id @default(uuid())
+  name String @unique
+
+  // Many-to-many
+  users UserSkill[]
+}
+
+model UserSkill {
+  id        String @id @default(uuid())
+  userId    String
+  skillId   String
+  profile   ContributorProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  skill     Skill              @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillId])
+  @@index([skillId])
+}
+
+// ─── Contributions ───────────────────────────────────────
+
+model Contribution {
+  id          String             @id @default(uuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  url         String
+  status      ContributionStatus @default(pending)
+  rejectionReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Tags & revisions
+  tags      ContributionTag[]
+  revisions ContributionRevision[]
+
+  @@index([status])
+  @@index([userId])
+}
+
+model ContributionTag {
+  id             String       @id @default(uuid())
+  contributionId String
+  tagId          String
+  contribution   Contribution @relation(fields: [contributionId], references: [id], onDelete: Cascade)
+  tag            Tag          @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([contributionId, tagId])
+  @@index([tagId])
+}
+
+model ContributionRevision {
+  id             String @id @default(uuid())
+  contributionId String
+  contribution   Contribution @relation(fields: [contributionId], references: [id], onDelete: Cascade)
+  title          String
+  description    String?
+  url            String
+  revisedAt      DateTime @default(now())
+
+  @@index([contributionId])
+}
+
+// ─── Tags ────────────────────────────────────────────────
+
+model Tag {
+  id   String @id @default(uuid())
+  name String @unique
+
+  approved Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  contributions ContributionTag[]
+}
+
+// ─── Content Management ──────────────────────────────────
+
+model CommunityLink {
+  id       String @id @default(uuid())
+  platform String // reddit, telegram, whatsapp, discord, etc.
+  url      String
+  label    String
+  enabled  Boolean @default(true)
+  order    Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([enabled])
+}
+
+// ─── Feedback ────────────────────────────────────────────
+
+model Feedback {
+  id         String           @id @default(uuid())
+  category   FeedbackCategory
+  title      String
+  description String
+  email      String? // Optional contact
+  status     FeedbackStatus   @default(new)
+  priority   Int              @default(0) // Higher = more urgent
+  internalNotes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String?
+  user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([category])
+}
+
+// ─── Security Reports ────────────────────────────────────
+
+model SecurityReport {
+  id           String         @id @default(uuid())
+  title        String
+  description  String
+  severity     ReportSeverity
+  proofOfConcept String?
+  contactEmail String?
+  status       ReportStatus   @default(new)
+  internalNotes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String?
+  user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([severity])
+}
+
+// ─── Moderation ──────────────────────────────────────────
+
+model ModerationFlag {
+  id           String @id @default(uuid())
+  flaggedUserId String
+  flaggedUser  User   @relation("FlaggedUser", fields: [flaggedUserId], references: [id], onDelete: Cascade)
+  flaggedById  String
+  flaggedByMod User   @relation("FlaggingMod", fields: [flaggedById], references: [id], onDelete: Cascade)
+  reason       String
+  resolved     Boolean @default(false)
+  resolvedAt   DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([flaggedUserId])
+  @@index([resolved])
+}
+
+// ─── Audit Log ───────────────────────────────────────────
+
+model AuditLog {
+  id       String @id @default(uuid())
+  actorId  String
+  actor    User   @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  action   String // e.g. "role.change", "contribution.approve", "user.delete"
+  targetType String // e.g. "user", "contribution", "feedback"
+  targetId String?
+  before   Json?  // Previous state (for updates/deletes)
+  after    Json?  // New state
+  ipHash   String?
+
+  createdAt DateTime @default(now())
+
+  @@index([actorId])
+  @@index([targetType, targetId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ─── Notifications ───────────────────────────────────────
+
+model Notification {
+  id      String @id @default(uuid())
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title   String
+  message String
+  type    String // "application_status", "contribution_status", "system", etc.
+  read    Boolean @default(false)
+  link    String? // URL to navigate to
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+}

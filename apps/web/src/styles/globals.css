@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Focus styles for accessibility */
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary-600;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Ensure minimum touch target size for mobile */
+  @media (pointer: coarse) {
+    button,
+    a,
+    input,
+    select,
+    textarea {
+      min-height: 44px;
+    }
+  }
+}
+
+@layer components {
+  /* Container utility */
+  .container-narrow {
+    @apply max-w-5xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .container-wide {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Card component */
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-neutral-200 p-6;
+  }
+
+  /* Button variants */
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-lg
+           bg-primary-600 text-white font-medium
+           hover:bg-primary-700 active:bg-primary-800
+           transition-colors duration-150
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-lg
+           bg-neutral-100 text-neutral-800 font-medium
+           hover:bg-neutral-200 active:bg-neutral-300
+           transition-colors duration-150
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2;
+  }
+
+  .btn-accent {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-lg
+           bg-accent-500 text-neutral-900 font-semibold
+           hover:bg-accent-400 active:bg-accent-600
+           transition-colors duration-150
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2;
+  }
+
+  /* Form input */
+  .input {
+    @apply block w-full px-4 py-3 rounded-lg
+           border border-neutral-300 bg-white
+           text-neutral-900 placeholder:text-neutral-400
+           focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20
+           transition-colors duration-150;
+  }
+
+  /* Section heading */
+  .section-heading {
+    @apply text-3xl sm:text-4xl font-bold text-neutral-900;
+  }
+
+  .section-subheading {
+    @apply text-lg text-neutral-600 mt-3 max-w-2xl;
+  }
+}

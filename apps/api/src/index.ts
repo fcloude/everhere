@@ -16,6 +16,7 @@ import communityLinkRoutes from './routes/communityLinks';
 import modRoutes from './routes/mod';
 import adminRoutes from './routes/admin';
 import { autoSeed } from './seed';
+import { prisma } from './db/client';
 
 // ── Logger ───────────────────────────────────────────────
 export const logger = pino({
@@ -87,6 +88,18 @@ app.use('/api/v1/security-reports', rateLimiters.securityReport);
 // ── Health Check ─────────────────────────────────────────
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// ── Diagnostic endpoint (temporary) ─────────────────────
+app.get('/health/db', async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    const userCount = await prisma.user.count();
+    res.json({ status: 'ok', db: 'connected', userCount, timestamp: new Date().toISOString() });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    res.json({ status: 'error', db: 'disconnected', error: msg, timestamp: new Date().toISOString() });
+  }
 });
 
 // ── API Routes ───────────────────────────────────────────

@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     buildCommand: npm install -g pnpm && pnpm install --no-frozen-lockfile --ignore-scripts && cd packages/shared && npx tsc && cd ../../apps/api && npx prisma generate --schema=./prisma/schema.prisma && npx tsc
-    startCommand: cd apps/api && npx prisma migrate deploy --schema=./prisma/schema.prisma && node dist/index.js
+    startCommand: cd apps/api && npx prisma db push --accept-data-loss --schema=./prisma/schema.prisma && node dist/index.js
     envVars:
       - key: NODE_ENV
         value: production

@@ -19,15 +19,8 @@ export const applicationSchema = z.object({
   }),
   portfolioLinks: z
     .array(
-      z.string().url('Please enter a valid URL').refine(
-        (url) => {
-          try {
-            const parsed = new URL(url);
-            return ['http:', 'https:'].includes(parsed.protocol);
-          } catch {
-            return false;
-          }
-        },
+      z.string().refine(
+        (url) => /^https?:\/\//.test(url),
         { message: 'Please enter a valid HTTP/HTTPS URL' },
       ),
     )

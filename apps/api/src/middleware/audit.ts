@@ -33,8 +33,8 @@ export async function writeAuditLog(entry: AuditEntry) {
         action: entry.action,
         targetType: entry.targetType,
         targetId: entry.targetId,
-        before: entry.before ?? undefined,
-        after: entry.after ?? undefined,
+        before: (entry.before as any) ?? undefined,
+        after: (entry.after as any) ?? undefined,
         ipHash,
       },
     });

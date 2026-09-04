@@ -11,16 +11,8 @@ export const contributionSchema = z.object({
     .optional(),
   url: z
     .string()
-    .url('Please enter a valid URL')
     .refine(
-      (url) => {
-        try {
-          const parsed = new URL(url);
-          return ['http:', 'https:'].includes(parsed.protocol);
-        } catch {
-          return false;
-        }
-      },
+      (url) => /^https?:\/\//.test(url),
       { message: 'Please enter a valid HTTP/HTTPS URL' },
     ),
   tagIds: z.array(z.string().uuid()).max(5, 'You can add at most 5 tags').optional(),

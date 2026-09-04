@@ -37,8 +37,11 @@ export const securityReportSchema = z.object({
   }),
   proofOfConcept: z
     .string()
-    .url('Please enter a valid URL')
     .max(2000)
+    .refine(
+      (url) => !url || /^https?:\/\//.test(url),
+      { message: 'Please enter a valid HTTP/HTTPS URL' },
+    )
     .optional(),
   contactEmail: z.string().email('Please enter a valid email').optional(),
   // Honeypot

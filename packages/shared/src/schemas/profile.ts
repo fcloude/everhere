@@ -4,7 +4,10 @@ export const profileUpdateSchema = z.object({
   bio: z.string().max(1000, 'Bio must be at most 1000 characters').optional(),
   skills: z.array(z.string()).max(10).optional(),
   portfolioLinks: z
-    .array(z.string().url('Please enter a valid URL'))
+    .array(z.string().refine(
+      (url) => /^https?:\/\//.test(url),
+      { message: 'Please enter a valid HTTP/HTTPS URL' },
+    ))
     .max(5, 'You can add at most 5 links')
     .optional(),
   preferredRole: z.string().optional(),

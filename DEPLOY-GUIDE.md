@@ -50,11 +50,11 @@ git push -u origin main
    - **Runtime:** Node
    - **Build Command:**
      ```
-     cd apps/api && npm install -g pnpm && pnpm install --no-frozen-lockfile && pnpm db:generate && pnpm db:migrate:prod
+     npm install -g pnpm && pnpm install --no-frozen-lockfile --ignore-scripts && cd apps/api && npx prisma generate --schema=./prisma/schema.prisma
      ```
    - **Start Command:**
      ```
-     cd apps/api && pnpm start
+     cd apps/api && npx prisma migrate deploy --schema=./prisma/schema.prisma && pnpm start
      ```
    - **Plan:** Free
 

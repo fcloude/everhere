@@ -15,6 +15,7 @@ import tagRoutes from './routes/tags';
 import communityLinkRoutes from './routes/communityLinks';
 import modRoutes from './routes/mod';
 import adminRoutes from './routes/admin';
+import { autoSeed } from './seed';
 
 // ── Logger ───────────────────────────────────────────────
 export const logger = pino({
@@ -107,8 +108,10 @@ app.use(errorHandler);
 // ── Start Server ─────────────────────────────────────────
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   logger.info(`EVERHERE API running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+  // Auto-seed admin user and defaults on startup
+  await autoSeed();
 });
 
 export default app;

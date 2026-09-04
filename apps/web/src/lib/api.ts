@@ -1,6 +1,6 @@
 import type { ApiResponse } from '@everhere/shared';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 // ── Typed fetch wrapper ───────────────────────────────────
 
@@ -41,14 +41,34 @@ export async function apiFetch<T>(
     }
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers: fetchHeaders,
-    body: body ? JSON.stringify(body) : undefined,
-    credentials: 'include', // Include cookies for session
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers: fetchHeaders,
+      body: body ? JSON.stringify(body) : undefined,
+      credentials: 'include', // Include cookies for session
+    });
+  } catch (fetchErr) {
+    // Network error, CORS block, DNS failure, etc.
+    const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+    throw new ApiError(
+      `Cannot reach server: ${msg}. API URL: ${API_BASE}`,
+      'NETWORK_ERROR',
+      0,
+    );
+  }
 
-  const json: ApiResponse<T> = await res.json();
+  let json: ApiResponse<T>;
+  try {
+    json = await res.json();
+  } catch {
+    throw new ApiError(
+      `Server returned non-JSON response (status ${res.status}). API URL: ${API_BASE}`,
+      'INVALID_RESPONSE',
+      res.status,
+    );
+  }
 
   if (!json.success || !json.data) {
     throw new ApiError(

@@ -104,10 +104,12 @@ router.post('/login', validate(loginSchema), async (req, res, next) => {
     });
 
     // Set session cookie
+    // Use SameSite=None for cross-origin deployments (Vercel frontend + Render API)
+    const isProduction = process.env.NODE_ENV === 'production';
     res.cookie('session_id', sessionId, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: maxAge * 60 * 60 * 1000,
       path: '/',
     });
@@ -116,8 +118,8 @@ router.post('/login', validate(loginSchema), async (req, res, next) => {
     const csrfToken = uuidv4();
     res.cookie('csrf_token', csrfToken, {
       httpOnly: false, // JS needs to read this
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: maxAge * 60 * 60 * 1000,
       path: '/',
     });
@@ -152,8 +154,9 @@ router.post('/logout', requireAuth, async (req, res, next) => {
       });
     }
 
-    res.clearCookie('session_id');
-    res.clearCookie('csrf_token');
+    const isProd = process.env.NODE_ENV === 'production';
+    res.clearCookie('session_id', { path: '/', sameSite: isProd ? 'none' : 'lax', secure: isProd });
+    res.clearCookie('csrf_token', { path: '/', sameSite: isProd ? 'none' : 'lax', secure: isProd });
 
     res.json({ success: true, data: { message: 'Logged out successfully.' } });
   } catch (error) {

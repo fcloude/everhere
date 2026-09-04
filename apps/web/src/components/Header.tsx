@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { api, type MeData } from '@/lib/api';
+import { api, type MeData, clearCsrfToken } from '@/lib/api';
 
 const navLinks = [
   { href: '/about', label: 'About' },
@@ -32,6 +32,7 @@ export default function Header() {
       // Ignore errors — clear state anyway
     }
     setUser(null);
+    clearCsrfToken();
     setMobileOpen(false);
     router.push('/');
   };

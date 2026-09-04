@@ -61,12 +61,27 @@ export async function apiFetch<T>(
   return json.data as T;
 }
 
-// ── CSRF token helper ────────────────────────────────────
+// ── CSRF token store (in-memory for cross-origin deployments) ──
+// Cookies are on the API domain — document.cookie can't read them cross-origin.
+// We store the CSRF token returned in login responses and send it as a header.
+let _csrfToken: string | null = null;
+
+export function setCsrfToken(token: string) {
+  _csrfToken = token;
+}
+
+export function clearCsrfToken() {
+  _csrfToken = null;
+}
 
 function getCsrfToken(): string | null {
-  if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(/csrf_token=([^;]+)/);
-  return match ? match[1] : null;
+  if (_csrfToken) return _csrfToken;
+  // Fallback: try reading from cookie (works when same-origin)
+  if (typeof document !== 'undefined') {
+    const match = document.cookie.match(/csrf_token=([^;]+)/);
+    if (match) return match[1];
+  }
+  return null;
 }
 
 export { ApiError };

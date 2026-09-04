@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { api, ApiError } from '@/lib/api';
+import { api, ApiError, setCsrfToken } from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,7 +31,11 @@ export default function LoginPage() {
     setServerError(null);
 
     try {
-      await api.login({ email: email.trim(), password });
+      const result = await api.login({ email: email.trim(), password });
+      // Store CSRF token for cross-origin requests (Vercel → Render)
+      if (result.csrfToken) {
+        setCsrfToken(result.csrfToken);
+      }
       setSuccess(true);
       // Redirect after brief delay so user sees success
       setTimeout(() => router.push('/account'), 800);
